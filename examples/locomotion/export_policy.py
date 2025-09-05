@@ -25,14 +25,20 @@ def export_policy():
     runner = OnPolicyRunner(env, train_cfg, log_dir, device=gs.device)
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device=gs.device)
+    
+    # 推論用ポリシー関数ではなく、実際のactor-criticモデルを取得
+    actor_critic = runner.alg.actor_critic
+    actor_critic.eval()  # 評価モードに設定
     
     # ダミー入力を作成
     dummy_input = torch.randn(1, obs_cfg["num_obs"], device=gs.device)
     
+    # Actorのみをエクスポート（アクションのみが必要）
+    actor_model = actor_critic.actor
+    
     # ONNXにエクスポート
     torch.onnx.export(
-        policy,
+        actor_model,
         dummy_input,
         f"{log_dir}/policy_{args.ckpt}.onnx",
         export_params=True,
@@ -45,6 +51,29 @@ def export_policy():
     )
     
     print(f"Policy exported to {log_dir}/policy_{args.ckpt}.onnx")
+    
+    # エクスポートの検証
+    try:
+        import onnxruntime as ort
+        ort_session = ort.InferenceSession(f"{log_dir}/policy_{args.ckpt}.onnx")
+        
+        # テスト入力
+        test_input = dummy_input.cpu().numpy()
+        ort_outputs = ort_session.run(None, {'observations': test_input})
+        
+        # PyTorchでの出力と比較
+        with torch.no_grad():
+            torch_output = actor_model(dummy_input)
+        
+        print(f"ONNX export verification:")
+        print(f"PyTorch output shape: {torch_output.shape}")
+        print(f"ONNX output shape: {ort_outputs[0].shape}")
+        print(f"Max difference: {torch.max(torch.abs(torch_output.cpu() - torch.tensor(ort_outputs[0]))).item()}")
+        
+    except ImportError:
+        print("onnxruntime not installed. Install with: pip install onnxruntime")
+    except Exception as e:
+        print(f"Verification failed: {e}")
 
 if __name__ == "__main__":
     export_policy()
