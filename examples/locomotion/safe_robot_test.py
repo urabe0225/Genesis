@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 import numpy as np
 import onnxruntime as ort
@@ -13,18 +14,18 @@ class SafeGo2Controller:
         else:
             self.session = None
         
-        # Unitree SDK初期化
+        # Unitree SDK initialization
         self.state_sub = ChannelSubscriber("rt/lowstate", LowState_)
         self.cmd_pub = ChannelPublisher("rt/lowcmd", LowCmd_)
         self.state_sub.Init()
         self.cmd_pub.Init()
         
-        # 安全パラメータ
-        self.safe_kp = 5.0   # 低いゲイン
-        self.safe_kd = 0.2   # 低いゲイン
-        self.max_angle_change = 0.1  # 最大角度変化（rad）
+        # Safety parameters
+        self.safe_kp = 5.0   # Low gain
+        self.safe_kd = 0.2   # Low gain
+        self.max_angle_change = 0.1  # Max angle change (rad)
         
-        # デフォルト関節角度（スタンディングポーズ）
+        # Default joint angles (standing pose)
         self.default_angles = np.array([
             0.0, 0.8, -1.5,  # FR
             0.0, 0.8, -1.5,  # FL
@@ -35,7 +36,7 @@ class SafeGo2Controller:
         self.current_target = self.default_angles.copy()
         
     def test_1_standing_pose(self):
-        """テスト1: 基本スタンディングポーズ"""
+        """Test 1: Basic standing pose"""
         print("Test 1: Setting to standing pose...")
         
         cmd = LowCmd_()
@@ -47,7 +48,7 @@ class SafeGo2Controller:
             cmd.motor_cmd[i].dq = 0.0
             cmd.motor_cmd[i].tau = 0.0
         
-        # 3秒間保持
+        # Hold for 3 seconds
         for _ in range(150):  # 50Hz * 3sec
             self.cmd_pub.Write(cmd)
             time.sleep(0.02)
@@ -55,14 +56,14 @@ class SafeGo2Controller:
         print("Standing pose test completed.")
     
     def test_2_single_joint(self, joint_idx=0, amplitude=0.1):
-        """テスト2: 単一関節の小さな動作"""
+        """Test 2: Single joint small movement"""
         print(f"Test 2: Moving joint {joint_idx} with amplitude {amplitude}")
         
         start_time = time.time()
-        duration = 5.0  # 5秒間
+        duration = 5.0  # 5 seconds
         
         while time.time() - start_time < duration:
-            # 正弦波で関節を動かす
+            # Move joint with sine wave
             t = time.time() - start_time
             offset = amplitude * np.sin(2 * np.pi * 0.5 * t)  # 0.5Hz
             
@@ -84,19 +85,19 @@ class SafeGo2Controller:
         print(f"Single joint test completed.")
     
     def test_3_data_collection(self):
-        """テスト3: センサーデータの確認"""
+        """Test 3: Sensor data verification"""
         print("Test 3: Collecting sensor data for 5 seconds...")
         
         start_time = time.time()
         while time.time() - start_time < 5.0:
             state = self.state_sub.Read()
             
-            # IMUデータ
+            # IMU data
             print(f"IMU RPY: {state.imu_state.rpy}")
             print(f"Gyro: {state.imu_state.gyroscope}")
             print(f"Accel: {state.imu_state.accelerometer}")
             
-            # 関節データ（最初の3関節のみ表示）
+            # Joint data (first 3 joints only)
             for i in range(3):
                 print(f"Joint {i}: pos={state.motor_state[i].q:.3f}, vel={state.motor_state[i].dq:.3f}")
             
@@ -104,31 +105,31 @@ class SafeGo2Controller:
             time.sleep(1.0)
     
     def test_4_model_output_check(self):
-        """テスト4: モデル出力の確認（動作なし）"""
+        """Test 4: Model output verification (no movement)"""
         if self.session is None:
             print("No model loaded. Skipping model test.")
             return
         
         print("Test 4: Checking model outputs...")
         
-        # ダミー観測値でモデルをテスト
+        # Test model with dummy observations
         dummy_obs = np.zeros(45, dtype=np.float32)
         dummy_obs = dummy_obs.reshape(1, -1)
         
         for i in range(10):
             actions = self.session.run(None, {'observations': dummy_obs})[0][0]
-            print(f"Model output {i}: {actions[:6]}")  # 最初の6つのアクションを表示
+            print(f"Model output {i}: {actions[:6]}")  # Display first 6 actions
             time.sleep(0.5)
     
     def test_5_safe_model_execution(self, duration=10.0):
-        """テスト5: モデル実行（低ゲイン・小さなアクション）"""
+        """Test 5: Model execution (low gain, small actions)"""
         if self.session is None:
             print("No model loaded. Cannot run model test.")
             return
         
         print(f"Test 5: Safe model execution for {duration} seconds...")
         
-        # 観測値の正規化スケール
+        # Observation normalization scales
         obs_scales = {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
@@ -140,50 +141,50 @@ class SafeGo2Controller:
         start_time = time.time()
         
         while time.time() - start_time < duration:
-            # 状態取得
+            # Get state
             state = self.state_sub.Read()
             
-            # 観測値構築（簡略版）
+            # Build observations (simplified version)
             obs = np.zeros(45)
             
-            # IMU（重力ベクトル）
+            # IMU (gravity vector)
             obs[0:3] = [state.imu_state.rpy[0], state.imu_state.rpy[1], 0]
             
-            # コマンド（停止）
+            # Commands (stop)
             obs[3:6] = [0.0, 0.0, 0.0]
             
-            # 速度（簡略）
+            # Velocity (simplified)
             obs[6:12] = 0.0
             
-            # 関節位置・速度
+            # Joint positions and velocities
             joint_pos = np.array([state.motor_state[i].q for i in range(12)])
             joint_vel = np.array([state.motor_state[i].dq for i in range(12)])
             obs[12:24] = (joint_pos - self.default_angles) * obs_scales["dof_pos"]
             obs[24:36] = joint_vel * obs_scales["dof_vel"]
             
-            # アクション履歴
+            # Action history
             obs[36:48] = action_history.flatten()
             
-            # モデル実行
+            # Run model
             obs_tensor = obs.reshape(1, -1).astype(np.float32)
             actions = self.session.run(None, {'observations': obs_tensor})[0][0]
             
-            # アクション履歴更新
+            # Update action history
             action_history[1:] = action_history[:-1]
             action_history[0] = actions
             
-            # 安全なアクション制限
-            actions = np.clip(actions, -0.1, 0.1)  # 小さなアクション範囲
+            # Limit actions for safety
+            actions = np.clip(actions, -0.1, 0.1)  # Small action range
             
-            # 目標角度計算
-            target_angles = self.default_angles + actions * 0.1  # 小さなスケール
+            # Calculate target angles
+            target_angles = self.default_angles + actions * 0.1  # Small scale
             
-            # 急激な変化を制限
+            # Limit sudden changes
             angle_diff = target_angles - self.current_target
             angle_diff = np.clip(angle_diff, -self.max_angle_change, self.max_angle_change)
             self.current_target += angle_diff
             
-            # コマンド送信
+            # Send command
             cmd = LowCmd_()
             for i in range(12):
                 cmd.motor_cmd[i].mode = 1
@@ -206,7 +207,7 @@ def main():
     print("4. Model output check")
     print("5. Safe model execution")
     
-    # モデルパス（オプション）
+    # Model path (optional)
     model_path = "logs/go2-walking/policy_100.onnx"
     
     try:
@@ -216,7 +217,7 @@ def main():
         controller.test_1_standing_pose()
         
         input("Press Enter to start Test 2 (Single joint movement)...")
-        controller.test_2_single_joint(joint_idx=1, amplitude=0.05)  # 小さな動作
+        controller.test_2_single_joint(joint_idx=1, amplitude=0.05)  # Small movement
         
         input("Press Enter to start Test 3 (Sensor data collection)...")
         controller.test_3_data_collection()
