@@ -10,7 +10,7 @@ def setup_cyclonedds():
     print("=== Setting up CycloneDDS ===")
     
     # Go2のCycloneDDS設定ファイルパス
-    cyclone_config = "/home/unitree/cyclonedx_ws/cyclonedx.xml"
+    cyclone_config = "/home/unitree/cyclonedds_ws/cyclonedds.xml"
     
     # 設定ファイルが存在するか確認
     if os.path.exists(cyclone_config):
