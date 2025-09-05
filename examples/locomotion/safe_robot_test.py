@@ -11,10 +11,13 @@ except ImportError:
     print("Warning: onnxruntime not available. Install with: pip install onnxruntime")
 
 try:
-    from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelPublisher
+    from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelPublisher, ChannelFactoryInitialize
     from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
     from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
     from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_, LowCmd_
+    from unitree_sdk2py.utils.crc import CRC
+    from unitree_sdk2py.utils.thread import RecurrentThread
+    import unitree_legged_const as go2
     UNITREE_SDK_AVAILABLE = True
 except ImportError:
     UNITREE_SDK_AVAILABLE = False
@@ -26,6 +29,11 @@ class SafeGo2Controller:
         self.state_sub = None
         self.cmd_pub = None
         self.robot_connected = False
+        self.crc = None
+        
+        # Initialize CRC if SDK is available
+        if UNITREE_SDK_AVAILABLE:
+            self.crc = CRC()
         
         # Try to load ONNX model
         if onnx_model_path and ONNX_AVAILABLE:
@@ -71,17 +79,42 @@ class SafeGo2Controller:
         # Safety parameters
         self.safe_kp = 5.0
         self.safe_kd = 0.2
+        self.safe_kp = 20.0  # Increased from 5.0 based on go2_stand_example
+        self.safe_kd = 2.0   # Increased from 0.2 based on go2_stand_example
         self.max_angle_change = 0.1
         
         # Default joint angles (standing pose)
         self.default_angles = np.array([
-            0.0, 0.8, -1.5,  # FR
-            0.0, 0.8, -1.5,  # FL
-            0.0, 1.0, -1.5,  # RR
-            0.0, 1.0, -1.5   # RL
+            0.0, 0.67, -1.3,  # FR
+            0.0, 0.67, -1.3,  # FL
+            0.0, 0.67, -1.3,  # RR
+            0.0, 0.67, -1.3   # RL
         ])
         
         self.current_target = self.default_angles.copy()
+        self.low_state = None
+    
+    def init_low_cmd(self):
+        """Initialize LowCmd with proper header and default values"""
+        cmd = unitree_go_msg_dds__LowCmd_()
+        cmd.head[0] = 0xFE
+        cmd.head[1] = 0xEF
+        cmd.level_flag = 0xFF
+        cmd.gpio = 0
+        
+        for i in range(20):
+            cmd.motor_cmd[i].mode = 0x01  # PMSM mode
+            cmd.motor_cmd[i].q = go2.PosStopF
+            cmd.motor_cmd[i].kp = 0
+            cmd.motor_cmd[i].dq = go2.VelStopF
+            cmd.motor_cmd[i].kd = 0
+            cmd.motor_cmd[i].tau = 0
+        
+        return cmd
+    
+    def low_state_handler(self, msg: LowState_):
+        """Handle incoming low state messages"""
+        self.low_state = msg
     
     def get_system_status(self):
         """Get current system status"""
@@ -113,17 +146,56 @@ class SafeGo2Controller:
             return
         
         try:
-            cmd = LowCmd_()
+            # Subscribe to state for initial position
+            self.state_sub.Init(self.low_state_handler, 10)
+            time.sleep(0.1)  # Allow some time for state updates
+            
+            # Get current position
+            current_pos = [0.0] * 12
+            if self.low_state is not None:
+                for i in range(12):
+                    current_pos[i] = self.low_state.motor_state[i].q
+                print("✓ Current position obtained")
+            else:
+                print("⚠ Using default current position")
+            
+            # Smooth transition to standing pose
+            duration = 2.0  # 2 seconds
+            steps = int(duration / 0.02)  # 50Hz
+            
+            for step in range(steps):
+                progress = step / float(steps)
+                
+                cmd = self.init_low_cmd()
+                
+                for i in range(12):
+                    # Interpolate from current to target position
+                    target_q = (1.0 - progress) * current_pos[i] + progress * self.default_angles[i]
+                    
+                    cmd.motor_cmd[i].mode = 0x01
+                    cmd.motor_cmd[i].q = target_q
+                    cmd.motor_cmd[i].kp = self.safe_kp
+                    cmd.motor_cmd[i].kd = self.safe_kd
+                    cmd.motor_cmd[i].dq = 0.0
+                    cmd.motor_cmd[i].tau = 0.0
+                
+                # Add CRC checksum
+                cmd.crc = self.crc.Crc(cmd)
+                self.cmd_pub.Write(cmd)
+                time.sleep(0.02)
+            
+            # Hold position for 1 second
+            cmd = self.init_low_cmd()
             for i in range(12):
-                cmd.motor_cmd[i].mode = 1
+                cmd.motor_cmd[i].mode = 0x01
                 cmd.motor_cmd[i].q = self.default_angles[i]
                 cmd.motor_cmd[i].kp = self.safe_kp
                 cmd.motor_cmd[i].kd = self.safe_kd
                 cmd.motor_cmd[i].dq = 0.0
                 cmd.motor_cmd[i].tau = 0.0
             
-            # Hold for 3 seconds
-            for _ in range(150):  # 50Hz * 3sec
+            for _ in range(50):  # Hold for 1 second
+                cmd.crc = self.crc.Crc(cmd)
                 self.cmd_pub.Write(cmd)
                 time.sleep(0.02)
             
@@ -151,15 +223,16 @@ class SafeGo2Controller:
                 target_angles = self.default_angles.copy()
                 target_angles[joint_idx] += offset
                 
-                cmd = LowCmd_()
+                cmd = self.init_low_cmd()
                 for i in range(12):
-                    cmd.motor_cmd[i].mode = 1
+                    cmd.motor_cmd[i].mode = 0x01
                     cmd.motor_cmd[i].q = target_angles[i]
                     cmd.motor_cmd[i].kp = self.safe_kp
                     cmd.motor_cmd[i].kd = self.safe_kd
                     cmd.motor_cmd[i].dq = 0.0
                     cmd.motor_cmd[i].tau = 0.0
                 
+                cmd.crc = self.crc.Crc(cmd)
                 self.cmd_pub.Write(cmd)
                 time.sleep(0.02)
             
@@ -180,18 +253,18 @@ class SafeGo2Controller:
             start_time = time.time()
             data_count = 0
             while time.time() - start_time < 5.0:
-                state = self.state_sub.Read()
-                data_count += 1
-                
-                print(f"Data {data_count}:")
-                print(f"  IMU RPY: {state.imu_state.rpy}")
-                print(f"  Gyro: {state.imu_state.gyroscope}")
-                print(f"  Accel: {state.imu_state.accelerometer}")
-                
-                for i in range(3):
-                    print(f"  Joint {i}: pos={state.motor_state[i].q:.3f}, vel={state.motor_state[i].dq:.3f}")
-                
-                print("-" * 30)
+                if self.low_state is not None:
+                    data_count += 1
+                    
+                    print(f"Data {data_count}:")
+                    print(f"  IMU RPY: {self.low_state.imu_state.rpy}")
+                    print(f"  Gyro: {self.low_state.imu_state.gyroscope}")
+                    print(f"  Accel: {self.low_state.imu_state.accelerometer}")
+                    
+                    for i in range(3):
+                        print(f"  Joint {i}: pos={self.low_state.motor_state[i].q:.3f}, vel={self.low_state.motor_state[i].dq:.3f}")
+                    
+                    print("-" * 30)
                 time.sleep(1.0)
                 
             print("✓ Data collection completed")
@@ -233,13 +306,6 @@ class SafeGo2Controller:
         if not self.robot_connected:
             print("⚠ No robot connection - running model inference only")
             try:
-                obs_scales = {
-                    "lin_vel": 2.0,
-                    "ang_vel": 0.25,
-                    "dof_pos": 1.0,
-                    "dof_vel": 0.05,
-                }
-                
                 # Simulate with dummy data
                 dummy_obs = np.zeros(45, dtype=np.float32)
                 dummy_obs = dummy_obs.reshape(1, -1)
@@ -274,15 +340,17 @@ class SafeGo2Controller:
             start_time = time.time()
             
             while time.time() - start_time < duration:
-                state = self.state_sub.Read()
+                if self.low_state is None:
+                    time.sleep(0.02)
+                    continue
                 
                 obs = np.zeros(45)
-                obs[0:3] = [state.imu_state.rpy[0], state.imu_state.rpy[1], 0]
+                obs[0:3] = [self.low_state.imu_state.rpy[0], self.low_state.imu_state.rpy[1], 0]
                 obs[3:6] = [0.0, 0.0, 0.0]
                 obs[6:12] = 0.0
                 
-                joint_pos = np.array([state.motor_state[i].q for i in range(12)])
-                joint_vel = np.array([state.motor_state[i].dq for i in range(12)])
+                joint_pos = np.array([self.low_state.motor_state[i].q for i in range(12)])
+                joint_vel = np.array([self.low_state.motor_state[i].dq for i in range(12)])
                 obs[12:24] = (joint_pos - self.default_angles) * obs_scales["dof_pos"]
                 obs[24:36] = joint_vel * obs_scales["dof_vel"]
                 obs[36:48] = action_history.flatten()
@@ -300,15 +368,16 @@ class SafeGo2Controller:
                 angle_diff = np.clip(angle_diff, -self.max_angle_change, self.max_angle_change)
                 self.current_target += angle_diff
                 
-                cmd = LowCmd_()
+                cmd = self.init_low_cmd()
                 for i in range(12):
-                    cmd.motor_cmd[i].mode = 1
+                    cmd.motor_cmd[i].mode = 0x01
                     cmd.motor_cmd[i].q = self.current_target[i]
                     cmd.motor_cmd[i].kp = self.safe_kp
                     cmd.motor_cmd[i].kd = self.safe_kd
                     cmd.motor_cmd[i].dq = 0.0
                     cmd.motor_cmd[i].tau = 0.0
                 
+                cmd.crc = self.crc.Crc(cmd)
                 self.cmd_pub.Write(cmd)
                 time.sleep(0.02)
             
@@ -318,11 +387,14 @@ class SafeGo2Controller:
 
 def main():
     print("=== Go2 Safe Testing Protocol ===")
+    print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
+    input("Press Enter to continue...")
     
     # Model path (optional)
     model_path = "logs/go2-walking/policy_100.onnx"
     
     try:
+        ChannelFactoryInitialize(0)
         controller = SafeGo2Controller(model_path)
         controller.print_status()
         
