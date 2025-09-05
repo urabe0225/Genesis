@@ -18,6 +18,8 @@ try:
     from unitree_sdk2py.utils.crc import CRC
     from unitree_sdk2py.utils.thread import RecurrentThread
     import unitree_legged_const as go2
+    from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
+    from unitree_sdk2py.go2.sport.sport_client import SportClient
     UNITREE_SDK_AVAILABLE = True
 except ImportError:
     UNITREE_SDK_AVAILABLE = False
@@ -45,54 +47,74 @@ class SafeGo2Controller:
         elif onnx_model_path:
             print("✗ ONNX model specified but onnxruntime not available")
         
-        # Try to initialize Unitree SDK
-        if UNITREE_SDK_AVAILABLE:
-            try:
-                self.state_sub = ChannelSubscriber("rt/lowstate", LowState_)
-                self.cmd_pub = ChannelPublisher("rt/lowcmd", LowCmd_)
-                
-                # Test initialization
-                if self.state_sub is not None and self.cmd_pub is not None:
-                    self.state_sub.Init()
-                    self.cmd_pub.Init()
-                    
-                    # Test if we can actually communicate
-                    try:
-                        test_state = self.state_sub.Read()
-                        if test_state is not None:
-                            self.robot_connected = True
-                            print("✓ Robot connection established")
-                        else:
-                            print("⚠ SDK initialized but no robot response")
-                    except:
-                        print("⚠ SDK initialized but communication failed")
-                else:
-                    print("✗ Failed to create SDK channels")
-                    
-            except Exception as e:
-                print(f"✗ Unitree SDK initialization failed: {e}")
-                self.state_sub = None
-                self.cmd_pub = None
-        else:
-            print("✗ Unitree SDK not available")
-        
-        # Safety parameters
-        self.safe_kp = 5.0
-        self.safe_kd = 0.2
-        self.safe_kp = 20.0  # Increased from 5.0 based on go2_stand_example
-        self.safe_kd = 2.0   # Increased from 0.2 based on go2_stand_example
+        # Safety parameters - 修正されたゲイン値
+        self.safe_kp = 20.0  # go2_stand_exampleと同じ値
+        self.safe_kd = 2.0   # go2_stand_exampleと同じ値
         self.max_angle_change = 0.1
         
         # Default joint angles (standing pose)
         self.default_angles = np.array([
             0.0, 0.67, -1.3,  # FR
-            0.0, 0.67, -1.3,  # FL
+            0.0, 0.67, -1.3,  # FL  
             0.0, 0.67, -1.3,  # RR
             0.0, 0.67, -1.3   # RL
         ])
         
         self.current_target = self.default_angles.copy()
         self.low_state = None
+        
+        # モーションスイッチャーとスポーツクライアント
+        self.sc = None
+        self.msc = None
+        
+        # SDK初期化
+        if UNITREE_SDK_AVAILABLE:
+            self.init_sdk()
+    
+    def init_sdk(self):
+        """Initialize Unitree SDK"""
+        try:
+            # チャンネル作成
+            self.state_sub = ChannelSubscriber("rt/lowstate", LowState_)
+            self.cmd_pub = ChannelPublisher("rt/lowcmd", LowCmd_)
+            
+            if self.state_sub is not None and self.cmd_pub is not None:
+                self.state_sub.Init(self.low_state_handler, 10)
+                self.cmd_pub.Init()
+                
+                # スポーツクライアントとモーションスイッチャー初期化
+                self.sc = SportClient()  
+                self.sc.SetTimeout(5.0)
+                self.sc.Init()
+
+                self.msc = MotionSwitcherClient()
+                self.msc.SetTimeout(5.0)
+                self.msc.Init()
+                
+                # モード確認とリリース
+                status, result = self.msc.CheckMode()
+                if result and result.get('name'):
+                    print(f"Current mode: {result['name']}")
+                    print("Releasing mode...")
+                    self.sc.StandDown()
+                    self.msc.ReleaseMode()
+                    time.sleep(1)
+                
+                # 接続テスト
+                time.sleep(0.5)
+                if self.low_state is not None:
+                    self.robot_connected = True
+                    print("✓ Robot connection established")
+                else:
+                    print("⚠ SDK initialized but no robot response")
+                    
+            else:
+                print("✗ Failed to create SDK channels")
+                
+        except Exception as e:
+            print(f"✗ Unitree SDK initialization failed: {e}")
+            self.state_sub = None
+            self.cmd_pub = None
     
     def init_low_cmd(self):
         """Initialize LowCmd with proper header and default values"""
@@ -134,6 +156,8 @@ class SafeGo2Controller:
         print(f"ONNX Runtime: {'✓' if status['onnx_runtime'] else '✗'}")
         print(f"Robot Connected: {'✓' if status['robot_connected'] else '✗'}")
         print(f"Model Loaded: {'✓' if status['model_loaded'] else '✗'}")
+        if self.low_state is not None:
+            print(f"Robot State: Available")
         print("=" * 21)
     
     def test_1_standing_pose(self):
@@ -146,22 +170,29 @@ class SafeGo2Controller:
             return
         
         try:
-            # Subscribe to state for initial position
-            self.state_sub.Init(self.low_state_handler, 10)
-            time.sleep(0.1)  # Allow some time for state updates
+            # 現在位置取得まで待機
+            wait_count = 0
+            while self.low_state is None and wait_count < 50:
+                time.sleep(0.1)
+                wait_count += 1
+            
+            if self.low_state is None:
+                print("✗ Could not get robot state")
+                return
             
             # Get current position
             current_pos = [0.0] * 12
-            if self.low_state is not None:
-                for i in range(12):
-                    current_pos[i] = self.low_state.motor_state[i].q
-                print("✓ Current position obtained")
-            else:
-                print("⚠ Using default current position")
+            for i in range(12):
+                current_pos[i] = self.low_state.motor_state[i].q
             
-            # Smooth transition to standing pose
-            duration = 2.0  # 2 seconds
+            print(f"✓ Current position obtained: {current_pos[:3]}")
+            print(f"Target position: {self.default_angles[:3]}")
+            
+            # Smooth transition to standing pose - より長い時間で安全に
+            duration = 3.0  # 3秒に延長
             steps = int(duration / 0.02)  # 50Hz
+            
+            print(f"Moving to standing pose over {duration} seconds...")
             
             for step in range(steps):
                 progress = step / float(steps)
@@ -182,9 +213,15 @@ class SafeGo2Controller:
                 # Add CRC checksum
                 cmd.crc = self.crc.Crc(cmd)
                 self.cmd_pub.Write(cmd)
+                
+                # 進捗表示
+                if step % 50 == 0:
+                    print(f"Progress: {progress*100:.1f}%")
+                
                 time.sleep(0.02)
             
-            # Hold position for 1 second
+            # Hold position for 2 seconds
+            print("Holding standing position...")
             cmd = self.init_low_cmd()
             for i in range(12):
                 cmd.motor_cmd[i].mode = 0x01
@@ -194,15 +231,24 @@ class SafeGo2Controller:
                 cmd.motor_cmd[i].dq = 0.0
                 cmd.motor_cmd[i].tau = 0.0
             
-            for _ in range(50):  # Hold for 1 second
+            for _ in range(100):  # Hold for 2 seconds
                 cmd.crc = self.crc.Crc(cmd)
                 self.cmd_pub.Write(cmd)
                 time.sleep(0.02)
             
             print("✓ Standing pose test completed")
+            
+            # 最終位置確認
+            if self.low_state is not None:
+                final_pos = [self.low_state.motor_state[i].q for i in range(3)]
+                print(f"Final position (first 3 joints): {final_pos}")
+                
         except Exception as e:
             print(f"✗ Test 1 failed: {e}")
-    
+            import traceback
+            traceback.print_exc()
+
+    # ...existing code... (他のテストメソッドは変更なし)
     def test_2_single_joint(self, joint_idx=0, amplitude=0.1):
         """Test 2: Single joint small movement"""
         print(f"\nTest 2: Moving joint {joint_idx} with amplitude {amplitude}")
