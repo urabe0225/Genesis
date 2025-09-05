@@ -41,8 +41,8 @@ def initialize_dds_manually():
     print("\n=== Manual DDS Initialization ===")
     
     try:
-        import cyclonedx
-        from cyclonedx.domain import DomainParticipant
+        import cyclonedds
+        from cyclonedds.domain import DomainParticipant
         
         # グローバルなDomainParticipantを作成
         global_participant = DomainParticipant(0)
