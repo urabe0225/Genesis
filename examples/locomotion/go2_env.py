@@ -263,3 +263,11 @@ class Go2Env:
     def _reward_base_height(self):
         # Penalize base height away from target
         return torch.square(self.base_pos[:, 2] - self.reward_cfg["base_height_target"])
+
+    def set_commands(self, commands):
+        """キーボードからのコマンドを設定"""
+        if len(commands) == 3:
+            # コマンドをテンソル形式に変換して全環境に適用
+            self.commands[:, 0] = commands[0]  # lin_vel_x
+            self.commands[:, 1] = commands[1]  # lin_vel_y  
+            self.commands[:, 2] = commands[2]  # ang_vel
