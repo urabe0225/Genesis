@@ -34,11 +34,23 @@ class SafeGo2Controller:
         # thread handling
         self.lowCmdWriteThreadPtr = None
 
-
+    # Private methods
+    def init_command(self):
+        self.low_cmd.head[0]=0xFE
+        self.low_cmd.head[1]=0xEF
+        self.low_cmd.level_flag = 0xFF
+        self.low_cmd.gpio = 0
+        for i in range(20):
+            self.low_cmd.motor_cmd[i].mode = 0x01  # PMSM mode
+            self.low_cmd.motor_cmd[i].q= 2.146e9
+            self.low_cmd.motor_cmd[i].kp = 0
+            self.low_cmd.motor_cmd[i].dq = 16000.0
+            self.low_cmd.motor_cmd[i].kd = 0
+            self.low_cmd.motor_cmd[i].tau = 0
 
     # Public methods
     def Init(self):
-        self.InitLowCmd()
+        self.init_command()
 
         # create publisher #
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -74,19 +86,7 @@ class SafeGo2Controller:
         )
         self.lowCmdWriteThreadPtr.Start()
 
-    # Private methods
-    def InitLowCmd(self):
-        self.low_cmd.head[0]=0xFE
-        self.low_cmd.head[1]=0xEF
-        self.low_cmd.level_flag = 0xFF
-        self.low_cmd.gpio = 0
-        for i in range(20):
-            self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
-            self.low_cmd.motor_cmd[i].q= 2.146e9#go2.PosStopF
-            self.low_cmd.motor_cmd[i].kp = 0
-            self.low_cmd.motor_cmd[i].dq = 16000.0#go2.VelStopF
-            self.low_cmd.motor_cmd[i].kd = 0
-            self.low_cmd.motor_cmd[i].tau = 0
+
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
