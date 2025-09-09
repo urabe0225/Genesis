@@ -22,7 +22,7 @@ class SafeGo2Controller:
         self.motiontime = 0
         self.dt = 0.002  # 0.001~0.01
 
-        self.low_cmd = unitree_go_msg_dds__LowCmd_()  
+        self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
 
         self._targetPos_1 = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
@@ -74,7 +74,14 @@ class SafeGo2Controller:
             status, result = self.msc.CheckMode()
             time.sleep(1)
 
+    def get_position(self):
+        if self.firstRun:
+            for i in range(12):
+                self.startPos[i] = self.low_state.motor_state[i].q
+            self.firstRun = False
+
     def Start(self):
+        self.get_position()
         self.lowCmdWriteThreadPtr = RecurrentThread(
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
         )
@@ -101,11 +108,6 @@ class SafeGo2Controller:
         # print("Battery state: voltage: ", msg.power_v, "current: ", msg.power_a)
 
     def LowCmdWrite(self):
-
-        if self.firstRun:
-            for i in range(12):
-                self.startPos[i] = self.low_state.motor_state[i].q
-            self.firstRun = False
 
         self.percents[0] += 1.0 / self.duration_1
         self.percents[0] = min(self.percents[0], 1)
