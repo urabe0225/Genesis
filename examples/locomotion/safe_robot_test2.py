@@ -109,11 +109,11 @@ class SafeGo2Controller:
         # print("IMU state: ", msg.imu_state)
         # print("Battery state: voltage: ", msg.power_v, "current: ", msg.power_a)
 
-    def input_low_cmd(self, motor_id, q, dq, kp, kd, tau):
+    def input_low_cmd(self, motor_id, q, dq, tau):
         self.low_cmd.motor_cmd[motor_id].q = q
         self.low_cmd.motor_cmd[motor_id].dq = dq
-        self.low_cmd.motor_cmd[motor_id].kp = kp
-        self.low_cmd.motor_cmd[motor_id].kd = kd
+        self.low_cmd.motor_cmd[motor_id].kp = self.Kp
+        self.low_cmd.motor_cmd[motor_id].kd = self.Kd
         self.low_cmd.motor_cmd[motor_id].tau = tau
 
     def clock(self,i):
@@ -127,8 +127,6 @@ class SafeGo2Controller:
                 self.input_low_cmd(i,
                                    (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
                                    0,
-                                   self.Kp,
-                                   self.Kd,
                                    0)
 
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
@@ -137,19 +135,9 @@ class SafeGo2Controller:
                 self.input_low_cmd(i,
                                    (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self.standing_pose[i],
                                    0,
-                                   self.Kp,
-                                   self.Kd,
                                    0)
 
-        if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] < 1):
-            self.clock(2)
-            for i in range(12):
-                self.input_low_cmd(i,
-                                   self.standing_pose[i],
-                                   0,
-                                   self.Kp,
-                                   self.Kd,
-                                   0)  
+
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] == 1) and (self.percents[3] <= 1):
             self.clock(3)
@@ -157,8 +145,6 @@ class SafeGo2Controller:
                 self.input_low_cmd(i,
                                    (1 - self.percents[3]) * self.standing_pose[i] + self.percents[3] * self._targetPos_3[i],
                                    0,
-                                   self.Kp,
-                                   self.Kd,
                                    0)
 
         self.low_cmd.crc = self.crc.Crc(self.low_cmd)
