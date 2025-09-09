@@ -30,6 +30,7 @@ class SafeGo2Controller:
 
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0, 0.0, 0.0]#[1.0, 0.0, 1.0, 0.0]
+        self.process = 0.0
 
         self.low_level = False
         # thread handling
@@ -102,6 +103,18 @@ class SafeGo2Controller:
                 print("Done!")
                 sys.exit(-1)     
             time.sleep(1)
+        self.percents = [0.0, 0.0, 0.0]
+        self.lowCmdWriteThreadPtr = RecurrentThread(
+            interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
+        )
+        self.lowCmdWriteThreadPtr.Start()
+        while True:        
+            if self.percents[2] == 1.0: 
+                time.sleep(1)
+                print("Done!")
+                sys.exit(-1)     
+            time.sleep(1)
+
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
@@ -116,12 +129,13 @@ class SafeGo2Controller:
         self.low_cmd.motor_cmd[motor_id].kd = self.Kd
         self.low_cmd.motor_cmd[motor_id].tau = tau
 
+    def test
+
     def clock(self,i):
         self.percents[i] += 1.0 / self.durations[i]
         self.percents[i] = min(self.percents[i], 1)
 
     def LowCmdWrite(self):
-        
         self.clock(0)
         if self.percents[0] < 1:
             for i in range(12):
@@ -150,7 +164,7 @@ class SafeGo2Controller:
             self.clock(2)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[2]) * self.stand_pose[i] + self.percents[2] * self.rest_pose[i],
+                                   (1 - self.percents[2]) * self.stand_pose[i] + self.percents[2] * self._targetPos_3[i],
                                    0,
                                    0)
 
