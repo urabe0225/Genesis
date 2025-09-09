@@ -16,12 +16,6 @@ class SafeGo2Controller:
     def __init__(self):
         self.Kp = 60.0
         self.Kd = 5.0
-        self.time_consume = 0
-        self.rate_count = 0
-        self.sin_count = 0
-        self.motiontime = 0
-        self.dt = 0.002  # 0.001~0.01
-
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
 
@@ -36,7 +30,6 @@ class SafeGo2Controller:
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0] * 4
 
-        self.firstRun = True
         self.done = False
 
         # thread handling
@@ -72,10 +65,8 @@ class SafeGo2Controller:
             time.sleep(1)
 
     def Get_position(self):
-        if self.firstRun:
-            for i in range(12):
-                self.startPos[i] = self.low_state.motor_state[i].q
-            self.firstRun = False
+        for i in range(12):
+            self.startPos[i] = self.low_state.motor_state[i].q
 
     def Start(self):
         self.Get_position()
