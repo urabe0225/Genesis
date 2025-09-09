@@ -73,22 +73,6 @@ class SafeGo2Controller:
         print("⚠ Warning: Could not release all modes")
         return False
 
-        '''
-        sc = SportClient()  
-        sc.SetTimeout(5.0)
-        sc.Init()
-        msc = MotionSwitcherClient()
-        msc.SetTimeout(5.0)
-        msc.Init()
-        status, result = msc.CheckMode()
-        while result['name']:
-            sc.StandDown()
-            msc.ReleaseMode()
-            status, result = msc.CheckMode()
-            time.sleep(1)
-        '''
-
-    # Public methods
     def Init(self):
         self.low_cmd = self.init_command()
 
@@ -101,8 +85,6 @@ class SafeGo2Controller:
         self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
         self.mode_release()
-
-
 
     def Get_position(self):
         for i in range(12):
@@ -120,7 +102,6 @@ class SafeGo2Controller:
                 print("Done!")
                 sys.exit(-1)     
             time.sleep(1)
-
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
