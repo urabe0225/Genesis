@@ -37,7 +37,7 @@ class SafeGo2Controller:
         self.duration_2 = 500
         self.duration_3 = 1000
         self.duration_4 = 900
-        self.percent_1 = 0
+        self.percents = [0.0] * 4
         self.percent_2 = 0
         self.percent_3 = 0
         self.percent_4 = 0
@@ -110,17 +110,17 @@ class SafeGo2Controller:
                 self.startPos[i] = self.low_state.motor_state[i].q
             self.firstRun = False
 
-        self.percent_1 += 1.0 / self.duration_1
-        self.percent_1 = min(self.percent_1, 1)
-        if self.percent_1 < 1:
+        self.percents[0] += 1.0 / self.duration_1
+        self.percents[0] = min(self.percents[0], 1)
+        if self.percents[0] < 1:
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percent_1) * self.startPos[i] + self.percent_1 * self._targetPos_1[i]
+                self.low_cmd.motor_cmd[i].q = (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i]
                 self.low_cmd.motor_cmd[i].dq = 0
                 self.low_cmd.motor_cmd[i].kp = self.Kp
                 self.low_cmd.motor_cmd[i].kd = self.Kd
                 self.low_cmd.motor_cmd[i].tau = 0
 
-        if (self.percent_1 == 1) and (self.percent_2 <= 1):
+        if (self.percents[0] == 1) and (self.percent_2 <= 1):
             self.percent_2 += 1.0 / self.duration_2
             self.percent_2 = min(self.percent_2, 1)
             for i in range(12):
@@ -130,7 +130,7 @@ class SafeGo2Controller:
                 self.low_cmd.motor_cmd[i].kd = self.Kd
                 self.low_cmd.motor_cmd[i].tau = 0
 
-        if (self.percent_1 == 1) and (self.percent_2 == 1) and (self.percent_3 < 1):
+        if (self.percents[0] == 1) and (self.percent_2 == 1) and (self.percent_3 < 1):
             self.percent_3 += 1.0 / self.duration_3
             self.percent_3 = min(self.percent_3, 1)
             for i in range(12):
@@ -140,7 +140,7 @@ class SafeGo2Controller:
                 self.low_cmd.motor_cmd[i].kd = self.Kd
                 self.low_cmd.motor_cmd[i].tau = 0
 
-        if (self.percent_1 == 1) and (self.percent_2 == 1) and (self.percent_3 == 1) and (self.percent_4 <= 1):
+        if (self.percents[0] == 1) and (self.percent_2 == 1) and (self.percent_3 == 1) and (self.percent_4 <= 1):
             self.percent_4 += 1.0 / self.duration_4
             self.percent_4 = min(self.percent_4, 1)
             for i in range(12):
