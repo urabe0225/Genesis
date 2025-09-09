@@ -31,10 +31,10 @@ class SafeGo2Controller:
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0] * 4
 
+        self.low_level = False
         # thread handling
         self.lowCmdWriteThreadPtr = None
 
-    # Private methods
     def init_command(self):
         cmd = unitree_go_msg_dds__LowCmd_()
         cmd.head[0]=0xFE
@@ -50,32 +50,41 @@ class SafeGo2Controller:
             cmd.motor_cmd[i].tau = 0
         return cmd
 
+    def mode_release(self):
+        max_attempts = 5
+        attempt = 0
+        msc = MotionSwitcherClient()
+
+        while attempt < max_attempts:
+            status, result = msc.CheckMode()
+
     # Public methods
     def Init(self):
         self.low_cmd = self.init_command()
 
-        # create publisher #
+        # create publisher
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
         self.lowcmd_publisher.Init()
 
-        # create subscriber # 
-        self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
-        self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
+        # create subscriber
+        #self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
+        #self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
-        self.sc = SportClient()  
-        self.sc.SetTimeout(5.0)
-        self.sc.Init()
+        sc = SportClient()  
+        sc.SetTimeout(5.0)
+        sc.Init()
 
-        self.msc = MotionSwitcherClient()
-        self.msc.SetTimeout(5.0)
-        self.msc.Init()
+        msc = MotionSwitcherClient()
+        msc.SetTimeout(5.0)
+        msc.Init()
 
-        status, result = self.msc.CheckMode()
+        status, result = msc.CheckMode()
         while result['name']:
-            self.sc.StandDown()
-            self.msc.ReleaseMode()
-            status, result = self.msc.CheckMode()
+            sc.StandDown()
+            msc.ReleaseMode()
+            status, result = msc.CheckMode()
             time.sleep(1)
+
 
     def Get_position(self):
         for i in range(12):
