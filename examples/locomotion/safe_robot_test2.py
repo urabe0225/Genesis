@@ -116,10 +116,12 @@ class SafeGo2Controller:
         self.low_cmd.motor_cmd[motor_id].kd = kd
         self.low_cmd.motor_cmd[motor_id].tau = tau
 
-    def LowCmdWrite(self):
+    def clock(self,i):
+        self.percents[i] += 1.0 / self.durations[i]
+        self.percents[i] = min(self.percents[i], 1)
 
-        self.percents[0] += 1.0 / self.durations[0]
-        self.percents[0] = min(self.percents[0], 1)
+    def LowCmdWrite(self):
+        self.clock(0)
         if self.percents[0] < 1:
             for i in range(12):
                 self.input_low_cmd(i,
@@ -130,8 +132,7 @@ class SafeGo2Controller:
                                    0)
 
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
-            self.percents[1] += 1.0 / self.durations[1]
-            self.percents[1] = min(self.percents[1], 1)
+            self.clock(1)
             for i in range(12):
                 self.input_low_cmd(i,
                                    (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self.standing_pose[i],
@@ -141,8 +142,7 @@ class SafeGo2Controller:
                                    0)
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] < 1):
-            self.percents[2] += 1.0 / self.durations[2]
-            self.percents[2] = min(self.percents[2], 1)
+            self.clock(2)
             for i in range(12):
                 self.input_low_cmd(i,
                                    self.standing_pose[i],
@@ -152,8 +152,7 @@ class SafeGo2Controller:
                                    0)  
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] == 1) and (self.percents[3] <= 1):
-            self.percents[3] += 1.0 / self.durations[3]
-            self.percents[3] = min(self.percents[3], 1)
+            self.clock(3)
             for i in range(12):
                 self.input_low_cmd(i,
                                    (1 - self.percents[3]) * self.standing_pose[i] + self.percents[3] * self._targetPos_3[i],
@@ -181,6 +180,7 @@ def main():
         controller = SafeGo2Controller()
         input("\nPress Enter to start Test 1 (Standing pose)...")
         controller.Init()
+        controller.Start()
         controller.Start()
 
     except Exception as e:
