@@ -53,10 +53,11 @@ class SafeGo2Controller:
     def mode_release(self):
         max_attempts = 5
         attempt = 0
-        
+        msc = MotionSwitcherClient()
+        sc = SportClient()  
         while attempt < max_attempts:
-            status, result = self.msc.CheckMode()
-            
+            status, result = msc.CheckMode()
+
             if not result or not result.get('name'):
                 print("✓ All modes released successfully")
                 return True
@@ -64,8 +65,8 @@ class SafeGo2Controller:
             mode_name = result['name']
             print(f"Releasing mode: {mode_name} (attempt {attempt + 1})")
             
-            self.sc.StandDown()
-            self.msc.ReleaseMode()
+            sc.StandDown()
+            msc.ReleaseMode()
             time.sleep(1)
             attempt += 1
         
