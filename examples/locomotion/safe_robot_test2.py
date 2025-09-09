@@ -51,12 +51,27 @@ class SafeGo2Controller:
         return cmd
 
     def mode_release(self):
+        '''
         max_attempts = 5
         attempt = 0
         msc = MotionSwitcherClient()
 
         while attempt < max_attempts:
             status, result = msc.CheckMode()
+        '''
+        sc = SportClient()  
+        sc.SetTimeout(5.0)
+        sc.Init()
+        msc = MotionSwitcherClient()
+        msc.SetTimeout(5.0)
+        msc.Init()
+        status, result = msc.CheckMode()
+        while result['name']:
+            sc.StandDown()
+            msc.ReleaseMode()
+            status, result = msc.CheckMode()
+            time.sleep(1)
+
 
     # Public methods
     def Init(self):
@@ -70,20 +85,8 @@ class SafeGo2Controller:
         self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
         self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
-        sc = SportClient()  
-        sc.SetTimeout(5.0)
-        sc.Init()
+        self.mode_release()
 
-        msc = MotionSwitcherClient()
-        msc.SetTimeout(5.0)
-        msc.Init()
-
-        status, result = msc.CheckMode()
-        while result['name']:
-            sc.StandDown()
-            msc.ReleaseMode()
-            status, result = msc.CheckMode()
-            time.sleep(1)
 
 
     def Get_position(self):
