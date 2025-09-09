@@ -22,9 +22,11 @@ class SafeGo2Controller:
         self.low_state = None  
 
         self.startPos = [0.0] * 12
-        self.ground_pose = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
+        self.standing_pose = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
                              -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
         self.stand_pose = [0.0, 0.67, -1.3] * 4  # 4脚 × 3関節
+        self.rest_pose = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
+                             -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
 
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0, 0.0, 0.0]#[1.0, 0.0, 1.0, 0.0]
@@ -124,7 +126,7 @@ class SafeGo2Controller:
         if self.percents[0] < 1:
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self.ground_pose[i],
+                                   (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self.standing_pose[i],
                                    0,
                                    0)
         
@@ -132,7 +134,7 @@ class SafeGo2Controller:
             self.clock(1)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[1]) * self.ground_pose[i] + self.percents[1] * self.stand_pose[i],
+                                   (1 - self.percents[1]) * self.standing_pose[i] + self.percents[1] * self.stand_pose[i],
                                    0,
                                    0)
         """
@@ -148,7 +150,7 @@ class SafeGo2Controller:
             self.clock(2)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[2]) * self.stand_pose[i] + self.percents[2] * self.ground_pose[i],
+                                   (1 - self.percents[2]) * self.stand_pose[i] + self.percents[2] * self.rest_pose[i],
                                    0,
                                    0)
 
