@@ -142,7 +142,7 @@ class SafeGo2Controller:
             self.clock(2)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[2]) * self.standing_pose[i] + self.percents[2] * self._standing_pose[i],
+                                   (1 - self.percents[2]) * self.standing_pose[i] + self.percents[2] * self.standing_pose[i],
                                    0,
                                    0)
 
