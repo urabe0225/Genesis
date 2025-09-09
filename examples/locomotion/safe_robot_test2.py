@@ -129,8 +129,6 @@ class SafeGo2Controller:
         self.low_cmd.motor_cmd[motor_id].kd = self.Kd
         self.low_cmd.motor_cmd[motor_id].tau = tau
 
-    def test
-
     def clock(self,i):
         self.percents[i] += 1.0 / self.durations[i]
         self.percents[i] = min(self.percents[i], 1)
