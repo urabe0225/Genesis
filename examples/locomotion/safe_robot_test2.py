@@ -2,14 +2,13 @@ import time
 import sys
 
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
-from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelFactoryInitialize
+from unitree_sdk2py.core.channel import ChannelSubscriber
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
-"import unitree_legged_const as go2
 from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
 from unitree_sdk2py.go2.sport.sport_client import SportClient
 
@@ -154,7 +153,7 @@ class SafeGo2Controller:
         self.low_cmd.crc = self.crc.Crc(self.low_cmd)
         self.lowcmd_publisher.Write(self.low_cmd)
 
-if __name__ == '__main__':
+def main():
     print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
     input("Press Enter to continue...")
@@ -162,19 +161,31 @@ if __name__ == '__main__':
     # Model path (optional)
     model_path = "logs/go2-walking/policy_100.onnx"
 
-    if len(sys.argv)>1:
-        ChannelFactoryInitialize(0, sys.argv[1])
-    else:
-        ChannelFactoryInitialize(0)
+    try:
+        if len(sys.argv)>1:
+            ChannelFactoryInitialize(0, sys.argv[1])
+        else:
+            ChannelFactoryInitialize(0)
+        controller = SafeGo2Controller()
 
-    controller = SafeGo2Controller()
+        input("\nPress Enter to start Test 1 (Standing pose)...")
+        controller.Init()
+        controller.Start()
+        while True:        
+            if controller.percent_4 == 1.0: 
+            time.sleep(1)
+            print("Done!")
+            sys.exit(-1)     
+            time.sleep(1)
+    except Exception as e:
+        print(f"\n✗ Error during testing: {e}")
+        import traceback
+        traceback.print_exc()
+    except KeyboardInterrupt:
+        print("\n⚠ Testing interrupted by user")
 
-    input("\nPress Enter to start Test 1 (Standing pose)...")
-    controller.Init()
-    controller.Start()
-    while True:        
-        if controller.percent_4 == 1.0: 
-           time.sleep(1)
-           print("Done!")
-           sys.exit(-1)     
-        time.sleep(1)
+if __name__ == '__main__':
+    main()
+
+    
+
