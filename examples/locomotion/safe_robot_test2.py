@@ -97,11 +97,13 @@ class SafeGo2Controller:
         # print("Battery state: voltage: ", msg.power_v, "current: ", msg.power_a)
 
     def input_low_cmd(self, motor_id, q, dq, kp, kd, tau):
-        self.low_cmd.motor_cmd[motor_id].q = q
-        self.low_cmd.motor_cmd[motor_id].dq = dq
-        self.low_cmd.motor_cmd[motor_id].kp = kp
-        self.low_cmd.motor_cmd[motor_id].kd = kd
-        self.low_cmd.motor_cmd[motor_id].tau = tau
+        cmd = unitree_go_msg_dds__LowCmd_()
+        cmd.motor_cmd[motor_id].q = q
+        cmd.motor_cmd[motor_id].dq = dq
+        cmd.motor_cmd[motor_id].kp = kp
+        cmd.motor_cmd[motor_id].kd = kd
+        cmd.motor_cmd[motor_id].tau = tau
+        self.low_cmd = cmd
 
     def LowCmdWrite(self):
 
