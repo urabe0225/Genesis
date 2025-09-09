@@ -9,7 +9,7 @@ from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
-import unitree_legged_const as go2
+"import unitree_legged_const as go2
 from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
 from unitree_sdk2py.go2.sport.sport_client import SportClient
 
@@ -92,9 +92,9 @@ class SafeGo2Controller:
         self.low_cmd.gpio = 0
         for i in range(20):
             self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
-            self.low_cmd.motor_cmd[i].q= go2.PosStopF
+            self.low_cmd.motor_cmd[i].q= 2.146e9#go2.PosStopF
             self.low_cmd.motor_cmd[i].kp = 0
-            self.low_cmd.motor_cmd[i].dq = go2.VelStopF
+            self.low_cmd.motor_cmd[i].dq = 16000.0#go2.VelStopF
             self.low_cmd.motor_cmd[i].kd = 0
             self.low_cmd.motor_cmd[i].tau = 0
 
@@ -168,13 +168,6 @@ if __name__ == '__main__':
         ChannelFactoryInitialize(0)
 
     controller = SafeGo2Controller()
-
-    print("\nTest sequence:")
-    print("1. Standing pose test")
-    print("2. Single joint movement test")
-    print("3. Sensor data collection")
-    print("4. Model output check")
-    print("5. Safe model execution")
 
     input("\nPress Enter to start Test 1 (Standing pose)...")
     controller.Init()
