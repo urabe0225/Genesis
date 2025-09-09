@@ -36,6 +36,7 @@ class SafeGo2Controller:
 
     # Private methods
     def init_command(self):
+        cmd = LowCmd_()
         self.low_cmd.head[0]=0xFE
         self.low_cmd.head[1]=0xEF
         self.low_cmd.level_flag = 0xFF
