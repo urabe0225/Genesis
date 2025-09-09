@@ -120,42 +120,45 @@ class SafeGo2Controller:
         self.percents[0] = min(self.percents[0], 1)
         if self.percents[0] < 1:
             for i in range(12):
-                input_low_cmd(i,
-                              (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
-                              0,
-                              self.Kp,
-                              self.Kd,
-                              0)
+                self.input_low_cmd(i,
+                                   (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
+                                   0,
+                                   self.Kp,
+                                   self.Kd,
+                                   0)
 
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
             self.percents[1] += 1.0 / self.duration_2
             self.percents[1] = min(self.percents[1], 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self._targetPos_2[i]
-                self.low_cmd.motor_cmd[i].dq = 0
-                self.low_cmd.motor_cmd[i].kp = self.Kp
-                self.low_cmd.motor_cmd[i].kd = self.Kd
-                self.low_cmd.motor_cmd[i].tau = 0
+                self.input_low_cmd(i,
+                                   (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self._targetPos_2[i],
+                                   0,
+                                   self.Kp,
+                                   self.Kd,
+                                   0)
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] < 1):
             self.percents[2] += 1.0 / self.duration_3
             self.percents[2] = min(self.percents[2], 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = self._targetPos_2[i] 
-                self.low_cmd.motor_cmd[i].dq = 0
-                self.low_cmd.motor_cmd[i].kp = self.Kp
-                self.low_cmd.motor_cmd[i].kd = self.Kd
-                self.low_cmd.motor_cmd[i].tau = 0
+                self.input_low_cmd(i,
+                                   self._targetPos_2[i],
+                                   0,
+                                   self.Kp,
+                                   self.Kd,
+                                   0)  
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] == 1) and (self.percents[3] <= 1):
             self.percents[3] += 1.0 / self.duration_4
             self.percents[3] = min(self.percents[3], 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percents[3]) * self._targetPos_2[i] + self.percents[3] * self._targetPos_3[i]
-                self.low_cmd.motor_cmd[i].dq = 0
-                self.low_cmd.motor_cmd[i].kp = self.Kp
-                self.low_cmd.motor_cmd[i].kd = self.Kd
-                self.low_cmd.motor_cmd[i].tau = 0
+                self.input_low_cmd(i,
+                                   (1 - self.percents[3]) * self._targetPos_2[i] + self.percents[3] * self._targetPos_3[i],
+                                   0,
+                                   self.Kp,
+                                   self.Kd,
+                                   0)
 
         self.low_cmd.crc = self.crc.Crc(self.low_cmd)
         self.lowcmd_publisher.Write(self.low_cmd)
