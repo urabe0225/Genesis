@@ -74,14 +74,14 @@ class SafeGo2Controller:
             status, result = self.msc.CheckMode()
             time.sleep(1)
 
-    def get_position(self):
+    def Get_position(self):
         if self.firstRun:
             for i in range(12):
                 self.startPos[i] = self.low_state.motor_state[i].q
             self.firstRun = False
 
     def Start(self):
-        self.get_position()
+        self.Get_position()
         self.lowCmdWriteThreadPtr = RecurrentThread(
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
         )
@@ -107,17 +107,25 @@ class SafeGo2Controller:
         # print("IMU state: ", msg.imu_state)
         # print("Battery state: voltage: ", msg.power_v, "current: ", msg.power_a)
 
+    def input_low_cmd(self, motor_id, q, dq, kp, kd, tau):
+        self.low_cmd.motor_cmd[motor_id].q = q
+        self.low_cmd.motor_cmd[motor_id].dq = dq
+        self.low_cmd.motor_cmd[motor_id].kp = kp
+        self.low_cmd.motor_cmd[motor_id].kd = kd
+        self.low_cmd.motor_cmd[motor_id].tau = tau
+
     def LowCmdWrite(self):
 
         self.percents[0] += 1.0 / self.duration_1
         self.percents[0] = min(self.percents[0], 1)
         if self.percents[0] < 1:
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i]
-                self.low_cmd.motor_cmd[i].dq = 0
-                self.low_cmd.motor_cmd[i].kp = self.Kp
-                self.low_cmd.motor_cmd[i].kd = self.Kd
-                self.low_cmd.motor_cmd[i].tau = 0
+                input_low_cmd(i,
+                              (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
+                              0,
+                              self.Kp,
+                              self.Kd,
+                              0)
 
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
             self.percents[1] += 1.0 / self.duration_2
