@@ -168,7 +168,7 @@ def main():
         controller.Init()
         controller.Start()
         while True:        
-            if controller.percent_4 == 1.0: 
+            if controller.percents[3] == 1.0: 
                 time.sleep(1)
                 print("Done!")
                 sys.exit(-1)     
