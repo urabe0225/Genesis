@@ -87,7 +87,12 @@ class SafeGo2Controller:
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
         )
         self.lowCmdWriteThreadPtr.Start()
-
+        while True:        
+            if controller.percents[3] == 1.0: 
+                time.sleep(1)
+                print("Done!")
+                sys.exit(-1)     
+            time.sleep(1)
 
 
     def LowStateMessageHandler(self, msg: LowState_):
@@ -169,12 +174,7 @@ def main():
         input("\nPress Enter to start Test 1 (Standing pose)...")
         controller.Init()
         controller.Start()
-        while True:        
-            if controller.percents[3] == 1.0: 
-                time.sleep(1)
-                print("Done!")
-                sys.exit(-1)     
-            time.sleep(1)
+
     except Exception as e:
         print(f"\n✗ Error during testing: {e}")
         import traceback
