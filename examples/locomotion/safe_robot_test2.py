@@ -97,7 +97,7 @@ class SafeGo2Controller:
         )
         self.lowCmdWriteThreadPtr.Start()
         while True:        
-            if self.percents[2] == 1.0: 
+            if self.percents[3] == 1.0: 
                 time.sleep(1)
                 print("Done!")
                 sys.exit(-1)     
@@ -142,7 +142,7 @@ class SafeGo2Controller:
             self.clock(2)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[2]) * self.standing_pose[i] + self.percents[2] * self._targetPos_2[i],
+                                   (1 - self.percents[2]) * self.standing_pose[i] + self.percents[2] * self._standing_pose[i],
                                    0,
                                    0)
 
