@@ -137,7 +137,13 @@ class SafeGo2Controller:
                                    0,
                                    0)
 
-
+        if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] < 1):
+            self.clock(2)
+            for i in range(12):
+                self.input_low_cmd(i,
+                                   self.standing_pose[i],
+                                   0,
+                                   0)  
 
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] == 1) and (self.percents[3] <= 1):
             self.clock(3)
