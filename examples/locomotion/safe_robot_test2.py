@@ -136,7 +136,7 @@ class SafeGo2Controller:
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] < 1):
             self.percents[2] += 1.0 / self.durations[2]
             self.percents[2] = min(self.percents[2], 1)
-                self.input_low_cmd(
+            self.input_low_cmd(
                                    self._targetPos_2[i],
                                    0,
                                    self.Kp,
@@ -146,8 +146,7 @@ class SafeGo2Controller:
         if (self.percents[0] == 1) and (self.percents[1] == 1) and (self.percents[2] == 1) and (self.percents[3] <= 1):
             self.percents[3] += 1.0 / self.durations[3]
             self.percents[3] = min(self.percents[3], 1)
-            for i in range(12):
-                self.input_low_cmd(i,
+            self.input_low_cmd(
                                    (1 - self.percents[3]) * self._targetPos_2[i] + self.percents[3] * self._targetPos_3[i],
                                    0,
                                    self.Kp,
