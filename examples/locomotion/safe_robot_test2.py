@@ -29,7 +29,7 @@ class SafeGo2Controller:
                              -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
 
         self.durations = [500, 500, 1000, 900]  # ms
-        self.percents = [0.0, 0.0, 0.0, 0.0]#[0.0] * 4
+        self.percents = [0.0] * 4
 
         self.low_level = False
         # thread handling
@@ -121,6 +121,16 @@ class SafeGo2Controller:
         self.percents[i] = min(self.percents[i], 1)
 
     def LowCmdWrite(self):
+        self.clock(0)
+        if self.percents[0] < 1:
+            for i in range(12):
+                self.input_low_cmd(i,
+                                   (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
+                                   0,
+                                   self.Kp,
+                                   self.Kd,
+                                   0)
+
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
             self.clock(1)
             for i in range(12):
