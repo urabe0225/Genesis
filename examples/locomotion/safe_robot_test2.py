@@ -21,15 +21,15 @@ class SafeGo2Controller:
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
 
+        self.startPos = [0.0] * 12
         self._targetPos_1 = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
                              -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
         self.standing_pose = [0.0, 0.67, -1.3] * 4  # 4脚 × 3関節
         self._targetPos_3 = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
                              -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
 
-        self.startPos = [0.0] * 12
         self.durations = [500, 500, 1000, 900]  # ms
-        self.percents = [0.0] * 4
+        self.percents = [1.0, 0.0, 0.0, 0.0]#[0.0] * 4
 
         self.low_level = False
         # thread handling
