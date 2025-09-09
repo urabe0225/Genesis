@@ -73,6 +73,10 @@ class SafeGo2Controller:
         print("⚠ Warning: Could not release all modes")
         return False
 
+    def Get_position(self):
+        for i in range(12):
+            self.startPos[i] = self.low_state.motor_state[i].q
+
     def Init(self):
         self.low_cmd = self.init_command()
 
@@ -85,13 +89,9 @@ class SafeGo2Controller:
         self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
         self.mode_release()
-
-    def Get_position(self):
-        for i in range(12):
-            self.startPos[i] = self.low_state.motor_state[i].q
+        self.Get_position()
 
     def Start(self):
-        self.Get_position()
         self.lowCmdWriteThreadPtr = RecurrentThread(
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
         )
@@ -180,7 +180,6 @@ def main():
         controller = SafeGo2Controller()
         input("\nPress Enter to start Test 1 (Standing pose)...")
         controller.Init()
-        controller.Start()
         controller.Start()
 
     except Exception as e:
