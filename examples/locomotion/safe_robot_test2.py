@@ -16,13 +16,14 @@ class SafeGo2Controller:
     def __init__(self):
         self.Kp = 60.0
         self.Kd = 5.0
+        self.crc = CRC()
+        
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
 
         self._targetPos_1 = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
                              -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
-        self._targetPos_2 = [0.0, 0.67, -1.3, 0.0, 0.67, -1.3,
-                             0.0, 0.67, -1.3, 0.0, 0.67, -1.3]
+        self.standing_pose = [0.0, 0.67, -1.3] * 4  # 4脚 × 3関節
         self._targetPos_3 = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
                              -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
 
@@ -30,12 +31,10 @@ class SafeGo2Controller:
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0] * 4
 
-        self.done = False
-
         # thread handling
         self.lowCmdWriteThreadPtr = None
 
-        self.crc = CRC()
+
 
     # Public methods
     def Init(self):
@@ -120,7 +119,7 @@ class SafeGo2Controller:
             self.percents[1] = min(self.percents[1], 1)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self._targetPos_2[i],
+                                   (1 - self.percents[1]) * self._targetPos_1[i] + self.percents[1] * self.standing_pose[i],
                                    0,
                                    self.Kp,
                                    self.Kd,
@@ -131,7 +130,7 @@ class SafeGo2Controller:
             self.percents[2] = min(self.percents[2], 1)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   self._targetPos_2[i],
+                                   self.standing_pose[i],
                                    0,
                                    self.Kp,
                                    self.Kd,
@@ -142,7 +141,7 @@ class SafeGo2Controller:
             self.percents[3] = min(self.percents[3], 1)
             for i in range(12):
                 self.input_low_cmd(i,
-                                   (1 - self.percents[3]) * self._targetPos_2[i] + self.percents[3] * self._targetPos_3[i],
+                                   (1 - self.percents[3]) * self.standing_pose[i] + self.percents[3] * self._targetPos_3[i],
                                    0,
                                    self.Kp,
                                    self.Kd,
