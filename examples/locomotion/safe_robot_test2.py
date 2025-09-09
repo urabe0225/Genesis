@@ -67,8 +67,8 @@ class SafeGo2Controller:
         self.lowcmd_publisher.Init()
 
         # create subscriber
-        #self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
-        #self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
+        self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
+        self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
         sc = SportClient()  
         sc.SetTimeout(5.0)
