@@ -167,15 +167,14 @@ def main():
         else:
             ChannelFactoryInitialize(0)
         controller = SafeGo2Controller()
-
         input("\nPress Enter to start Test 1 (Standing pose)...")
         controller.Init()
         controller.Start()
         while True:        
             if controller.percent_4 == 1.0: 
-            time.sleep(1)
-            print("Done!")
-            sys.exit(-1)     
+                time.sleep(1)
+                print("Done!")
+                sys.exit(-1)     
             time.sleep(1)
     except Exception as e:
         print(f"\n✗ Error during testing: {e}")
