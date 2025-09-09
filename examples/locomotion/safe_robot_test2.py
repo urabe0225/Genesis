@@ -121,7 +121,7 @@ class SafeGo2Controller:
         self.percents[i] = min(self.percents[i], 1)
 
     def LowCmdWrite(self):
-        """
+        
         self.clock(0)
         if self.percents[0] < 1:
             for i in range(12):
@@ -129,7 +129,7 @@ class SafeGo2Controller:
                                    (1 - self.percents[0]) * self.startPos[i] + self.percents[0] * self._targetPos_1[i],
                                    0,
                                    0)
-        """
+        
         if (self.percents[0] == 1) and (self.percents[1] <= 1):
             self.clock(1)
             for i in range(12):
