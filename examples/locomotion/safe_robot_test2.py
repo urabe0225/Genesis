@@ -97,7 +97,7 @@ class SafeGo2Controller:
         )
         self.lowCmdWriteThreadPtr.Start()
         while True:        
-            if self.percents[3] == 1.0: 
+            if self.percents[2] == 1.0: 
                 time.sleep(1)
                 print("Done!")
                 sys.exit(-1)     
