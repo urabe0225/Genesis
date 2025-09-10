@@ -17,6 +17,8 @@ class SafeGo2Controller:
         self.Kp = 60.0
         self.Kd = 5.0
         self.crc = CRC()
+
+        self.robot_connected = False
         
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
@@ -95,6 +97,7 @@ class SafeGo2Controller:
         )
         self.lowCmdWriteThreadPtr.Start()
         print("Control thread started")
+
     def Wait(self):
         while True:        
             if self.percents[2] == 1.0: 
@@ -156,6 +159,12 @@ class SafeGo2Controller:
         self.low_cmd.crc = self.crc.Crc(self.low_cmd)
         self.lowcmd_publisher.Write(self.low_cmd)
 
+    def test_1_standing_pose(self):
+        """Test 1: Basic standing pose"""
+        print("\nTest 1: Setting to standing pose...")
+        self.Init()
+        self.Start()
+        self.Wait()
 def main():
     print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
@@ -171,9 +180,11 @@ def main():
             ChannelFactoryInitialize(0)
         controller = SafeGo2Controller()
         input("\nPress Enter to start Test 1 (Standing pose)...")
-        controller.Init()
-        controller.Start()
-        controller.Wait()
+        controller.test_1_standing_pose()
+
+        input("\nPress Enter to start Test 2 (Single joint movement)...")
+
+
     except Exception as e:
         print(f"\n✗ Error during testing: {e}")
         import traceback
