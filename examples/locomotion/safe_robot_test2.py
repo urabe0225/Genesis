@@ -94,6 +94,8 @@ class SafeGo2Controller:
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
         )
         self.lowCmdWriteThreadPtr.Start()
+        print("Control thread started")
+    def Wait(self):
         while True:        
             if self.percents[2] == 1.0: 
                 time.sleep(1)
@@ -171,7 +173,7 @@ def main():
         input("\nPress Enter to start Test 1 (Standing pose)...")
         controller.Init()
         controller.Start()
-        controller.Start()
+        controller.Wait()
     except Exception as e:
         print(f"\n✗ Error during testing: {e}")
         import traceback
