@@ -27,29 +27,13 @@ class SafeGo2Controller:
         self.stand_pose = [0.0, 0.67, -1.3] * 4  # 4脚 × 3関節
         self.rest_pose = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
                              -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
-
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0, 0.0, 0.0]#[1.0, 0.0, 1.0, 0.0]
         self.process = 0.0
-
         self.low_level = False
-        # thread handling
-        self.lowCmdWriteThreadPtr = None
+        self.lowCmdWriteThreadPtr = None  # thread handling
 
-    def init_command(self):
-        cmd = unitree_go_msg_dds__LowCmd_()
-        cmd.head[0]=0xFE
-        cmd.head[1]=0xEF
-        cmd.level_flag = 0xFF
-        cmd.gpio = 0
-        for i in range(20):
-            cmd.motor_cmd[i].mode = 0x01  # PMSM mode
-            cmd.motor_cmd[i].q= 2.146e9
-            cmd.motor_cmd[i].kp = 0
-            cmd.motor_cmd[i].dq = 16000.0
-            cmd.motor_cmd[i].kd = 0
-            cmd.motor_cmd[i].tau = 0
-        return cmd
+
 
     def mode_release(self):
         max_attempts = 5
@@ -79,7 +63,21 @@ class SafeGo2Controller:
             self.startPos[i] = self.low_state.motor_state[i].q
 
     def Init(self):
-        self.low_cmd = self.init_command()
+        def init_command():
+            cmd = unitree_go_msg_dds__LowCmd_()
+            cmd.head[0]=0xFE
+            cmd.head[1]=0xEF
+            cmd.level_flag = 0xFF
+            cmd.gpio = 0
+            for i in range(20):
+                cmd.motor_cmd[i].mode = 0x01  # PMSM mode
+                cmd.motor_cmd[i].q= 2.146e9
+                cmd.motor_cmd[i].kp = 0
+                cmd.motor_cmd[i].dq = 16000.0
+                cmd.motor_cmd[i].kd = 0
+                cmd.motor_cmd[i].tau = 0
+            return cmd
+        self.low_cmd = init_command()
 
         # create publisher
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -118,8 +116,6 @@ class SafeGo2Controller:
         self.low_cmd.motor_cmd[motor_id].kp = self.Kp
         self.low_cmd.motor_cmd[motor_id].kd = self.Kd
         self.low_cmd.motor_cmd[motor_id].tau = tau
-
-    def test
 
     def clock(self,i):
         self.percents[i] += 1.0 / self.durations[i]
