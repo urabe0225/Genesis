@@ -31,55 +31,54 @@ class SafeGo2Controller:
         self.durations = [500, 500, 1000, 900]  # ms
         self.percents = [0.0, 0.0, 0.0]#[1.0, 0.0, 1.0, 0.0]
         self.process = 0.0
-
         self.low_level = False
         # thread handling
         self.lowCmdWriteThreadPtr = None
 
-    def init_command(self):
-        cmd = unitree_go_msg_dds__LowCmd_()
-        cmd.head[0]=0xFE
-        cmd.head[1]=0xEF
-        cmd.level_flag = 0xFF
-        cmd.gpio = 0
-        for i in range(20):
-            cmd.motor_cmd[i].mode = 0x01  # PMSM mode
-            cmd.motor_cmd[i].q= 2.146e9
-            cmd.motor_cmd[i].kp = 0
-            cmd.motor_cmd[i].dq = 16000.0
-            cmd.motor_cmd[i].kd = 0
-            cmd.motor_cmd[i].tau = 0
-        return cmd
-
-    def mode_release(self):
-        max_attempts = 5
-        attempt = 0
-        msc = MotionSwitcherClient()
-        sc = SportClient()  
-        while attempt < max_attempts:
-            status, result = msc.CheckMode()
-
-            if not result or not result.get('name'):
-                print("✓ All modes released successfully")
-                return True
-                
-            mode_name = result['name']
-            print(f"Releasing mode: {mode_name} (attempt {attempt + 1})")
-            
-            sc.StandDown()
-            msc.ReleaseMode()
-            time.sleep(1)
-            attempt += 1
-        
-        print("⚠ Warning: Could not release all modes")
-        return False
-
-    def Get_position(self):
-        for i in range(12):
-            self.startPos[i] = self.low_state.motor_state[i].q
-
     def Init(self):
-        self.low_cmd = self.init_command()
+        def init_command():
+            cmd = unitree_go_msg_dds__LowCmd_()
+            cmd.head[0]=0xFE
+            cmd.head[1]=0xEF
+            cmd.level_flag = 0xFF
+            cmd.gpio = 0
+            for i in range(20):
+                cmd.motor_cmd[i].mode = 0x01  # PMSM mode
+                cmd.motor_cmd[i].q= 2.146e9
+                cmd.motor_cmd[i].kp = 0
+                cmd.motor_cmd[i].dq = 16000.0
+                cmd.motor_cmd[i].kd = 0
+                cmd.motor_cmd[i].tau = 0
+            return cmd
+
+        def get_position():
+            for i in range(12):
+                self.startPos[i] = self.low_state.motor_state[i].q
+
+        def mode_release():
+            max_attempts = 5
+            attempt = 0
+            msc = MotionSwitcherClient()
+            sc = SportClient()  
+            while attempt < max_attempts:
+                status, result = msc.CheckMode()
+
+                if not result or not result.get('name'):
+                    print("✓ All modes released successfully")
+                    return True
+                    
+                mode_name = result['name']
+                print(f"Releasing mode: {mode_name} (attempt {attempt + 1})")
+                
+                sc.StandDown()
+                msc.ReleaseMode()
+                time.sleep(1)
+                attempt += 1
+            
+            print("⚠ Warning: Could not release all modes")
+            return False
+
+        self.low_cmd = init_command()
 
         # create publisher
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -89,8 +88,8 @@ class SafeGo2Controller:
         self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
         self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
 
-        self.mode_release()
-        self.Get_position()
+        mode_release()
+        get_position()
 
     def Start(self):
         self.lowCmdWriteThreadPtr = RecurrentThread(
@@ -103,6 +102,7 @@ class SafeGo2Controller:
                 print("Done!")
                 sys.exit(-1)     
             time.sleep(1)
+        """"""
         self.percents = [0.0, 0.0, 0.0]
         self.lowCmdWriteThreadPtr = RecurrentThread(
             interval=0.002, target=self.LowCmdWrite, name="writebasiccmd"
@@ -114,7 +114,7 @@ class SafeGo2Controller:
                 print("Done!")
                 sys.exit(-1)     
             time.sleep(1)
-
+        """"""
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
