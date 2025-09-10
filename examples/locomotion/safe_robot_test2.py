@@ -172,13 +172,13 @@ class SafeGo2Controller:
     def test_1_standing_pose(self):
         """Test 1: Basic standing pose"""
         print("\nTest 1: Setting to standing pose...")
+        self.Init()
 
         if not self.robot_connected:
             print("⚠ Skipping Test 1 - No robot connection")
             print("✓ Test 1 simulated (would set standing pose)")
             return
         try:
-            self.Init()
             self.Start()
             self.Wait()
         except Exception as e:
