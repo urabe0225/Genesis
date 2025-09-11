@@ -194,9 +194,9 @@ def main():
         custom.Start()
         while True:        
             if custom.percent_4 == 1.0: 
-            time.sleep(1)
-            print("Done!")
-            sys.exit(-1)     
+                time.sleep(1)
+                print("Done!")
+                sys.exit(-1)     
             time.sleep(1)
     except Exception as e:
         print(f"\n✗ Error during testing: {e}")
