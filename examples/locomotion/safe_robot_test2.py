@@ -24,7 +24,11 @@ except ImportError:
     UNITREE_SDK_AVAILABLE = False
 
 class Go2Controller:
-    def __init__(self):
+    def __init__(self, onnx_model_path=None):
+        if UNITREE_SDK_AVAILABLE:
+            self.crc = CRC()
+        else:
+            self.crc = None
         self.Kp = 60.0
         self.Kd = 5.0
         self.time_consume = 0
@@ -58,8 +62,6 @@ class Go2Controller:
 
         # thread handling
         self.lowCmdWriteThreadPtr = None
-
-        self.crc = CRC()
 
     # Public methods
     def Init(self):
