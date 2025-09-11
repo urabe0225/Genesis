@@ -181,21 +181,31 @@ def main():
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
     input("Press Enter to continue...")
 
-    if len(sys.argv)>1:
-        ChannelFactoryInitialize(0, sys.argv[1])
-    else:
-        ChannelFactoryInitialize(0)
+    # Model path (optional)
+    model_path = "logs/go2-walking/policy_100.onnx"
 
-    custom = Go2Controller()
-    custom.Init()
-    custom.Start()
+    try:
+        if len(sys.argv)>1:
+            ChannelFactoryInitialize(0, sys.argv[1])
+        else:
+            ChannelFactoryInitialize(0)
+        custom = Go2Controller()
+        custom.Init()
+        custom.Start()
+        while True:        
+            if custom.percent_4 == 1.0: 
+            time.sleep(1)
+            print("Done!")
+            sys.exit(-1)     
+            time.sleep(1)
+    except Exception as e:
+        print(f"\n✗ Error during testing: {e}")
+        import traceback
+        traceback.print_exc()
+    except KeyboardInterrupt:
+        print("\n⚠ Testing interrupted by user")
 
-    while True:        
-        if custom.percent_4 == 1.0: 
-           time.sleep(1)
-           print("Done!")
-           sys.exit(-1)     
-        time.sleep(1)
+
 
 if __name__ == '__main__':
     main()
