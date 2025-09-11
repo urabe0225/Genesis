@@ -29,6 +29,16 @@ class Go2Controller:
             self.crc = CRC()
         else:
             self.crc = None
+
+        if onnx_model_path and ONNX_AVAILABLE:
+            try:
+                self.session = ort.InferenceSession(onnx_model_path)
+                print(f"✓ ONNX model loaded: {onnx_model_path}")
+            except Exception as e:
+                print(f"Error loading ONNX model: {e}")
+        elif onnx_model_path:
+            print("✗ ONNX model specified but onnxruntime not available")
+
         self.Kp = 60.0
         self.Kd = 5.0
         self.time_consume = 0
