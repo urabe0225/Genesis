@@ -23,12 +23,6 @@ except ImportError:
     print("✗ Unitree SDK not available. Please install the Unitree SDK for Python.")
     UNITREE_SDK_AVAILABLE = False
 
-
-from unitree_sdk2py.utils.crc import CRC
-from unitree_sdk2py.utils.thread import RecurrentThread
-from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
-from unitree_sdk2py.go2.sport.sport_client import SportClient
-
 class Go2Controller:
     def __init__(self):
         self.Kp = 60.0
@@ -171,6 +165,7 @@ class Go2Controller:
         self.lowcmd_publisher.Write(self.low_cmd)
 
 def main():
+    print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
     input("Press Enter to continue...")
 
