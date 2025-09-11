@@ -1,16 +1,9 @@
+# -*- coding: utf-8 -*-
 import time
 import sys
-
-from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
-from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelFactoryInitialize
-from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
-from unitree_sdk2py.utils.crc import CRC
-from unitree_sdk2py.utils.thread import RecurrentThread
-from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
-from unitree_sdk2py.go2.sport.sport_client import SportClient
+import common
+ONNX_AVAILABLE = common.import_onnx()
+UNITREE_SDK_AVAILABLE = common.import_unitree_sdk()
 
 class Custom:
     def __init__(self):
