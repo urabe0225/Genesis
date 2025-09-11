@@ -8,7 +8,6 @@ try:
 except ImportError:
     print("✗ ONNX or ONNX Runtime not available. Please install via 'pip install onnx onnxruntime'")
     ONNX_AVAILABLE = False
-try:
     from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelPublisher, ChannelFactoryInitialize
     from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
     from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
@@ -17,11 +16,6 @@ try:
     from unitree_sdk2py.utils.thread import RecurrentThread
     from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
     from unitree_sdk2py.go2.sport.sport_client import SportClient
-    print("✓ Unitree SDK is available")
-    UNITREE_SDK_AVAILABLE = True
-except ImportError:
-    print("✗ Unitree SDK not available. Please install the Unitree SDK for Python.")
-    UNITREE_SDK_AVAILABLE = False
 
 class Go2Controller:
     def __init__(self, onnx_model_path=None):
