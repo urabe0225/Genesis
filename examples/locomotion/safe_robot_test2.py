@@ -1,22 +1,54 @@
 import time
 import sys
 
-from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
-from unitree_sdk2py.core.channel import ChannelSubscriber
-from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
-from unitree_sdk2py.utils.crc import CRC
-from unitree_sdk2py.utils.thread import RecurrentThread
-from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
-from unitree_sdk2py.go2.sport.sport_client import SportClient
+try:
+    import onnxruntime as ort
+    ONNX_AVAILABLE = True
+except ImportError:
+    ONNX_AVAILABLE = False
+    print("Warning: onnxruntime not available. Install with: pip install onnxruntime")
+try:
+    from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelPublisher, ChannelFactoryInitialize
+    from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
+    from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
+    from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_, LowCmd_
+    from unitree_sdk2py.utils.crc import CRC
+    from unitree_sdk2py.utils.thread import RecurrentThread
+    #import unitree_legged_const as go2
+    from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
+    from unitree_sdk2py.go2.sport.sport_client import SportClient
+    UNITREE_SDK_AVAILABLE = True
+except ImportError:
+    UNITREE_SDK_AVAILABLE = False
+    print("Warning: Unitree SDK not available")
 
 class SafeGo2Controller:
-    def __init__(self):
+    def __init__(self, onnx_model_path=None):
+        if UNITREE_SDK_AVAILABLE:
+            self.crc = CRC()
+        else:
+            self.crc = None
+        if onnx_model_path and ONNX_AVAILABLE:
+            try:
+                self.session = ort.InferenceSession(onnx_model_path)
+                print(f"✓ ONNX model loaded: {onnx_model_path}")
+            except Exception as e:
+                print(f"Error loading ONNX model: {e}")
+        elif onnx_model_path:
+            print("✗ ONNX model specified but onnxruntime not available")
+        if UNITREE_SDK_AVAILABLE:
+            try:
+                pass
+            except Exception as e:
+                print(f"✗ Unitree SDK initialization failed: {e}")
+                self.state_sub = None
+                self.cmd_pub = None
+        else:
+            print("✗ Unitree SDK not available")
+            #self.state_sub = None
+            #self.cmd_pub = None
         self.Kp = 60.0
         self.Kd = 5.0
-        self.crc = CRC()
 
         self.robot_connected = False
         
