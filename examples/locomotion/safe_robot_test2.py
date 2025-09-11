@@ -69,7 +69,21 @@ class Go2Controller:
 
     # Public methods
     def Init(self):
-        self.InitLowCmd()
+        def init_low_cmd():
+            cmd = unitree_go_msg_dds__LowCmd_()
+            cmd.head[0]=0xFE
+            cmd.head[1]=0xEF
+            cmd.level_flag = 0xFF
+            cmd.gpio = 0
+            for i in range(20):
+                cmd.motor_cmd[i].mode = 0x01  # PMSM mode
+                cmd.motor_cmd[i].q= 2.146e9
+                cmd.motor_cmd[i].kp = 0
+                cmd.motor_cmd[i].dq = 16000.0
+                cmd.motor_cmd[i].kd = 0
+                cmd.motor_cmd[i].tau = 0
+            return cmd
+        self.low_cmd = init_low_cmd()
 
         # create publisher #
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -101,18 +115,7 @@ class Go2Controller:
         self.lowCmdWriteThreadPtr.Start()
 
     # Private methods
-    def InitLowCmd(self):
-        self.low_cmd.head[0]=0xFE
-        self.low_cmd.head[1]=0xEF
-        self.low_cmd.level_flag = 0xFF
-        self.low_cmd.gpio = 0
-        for i in range(20):
-            self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
-            self.low_cmd.motor_cmd[i].q= 2.146e9
-            self.low_cmd.motor_cmd[i].kp = 0
-            self.low_cmd.motor_cmd[i].dq = 16000.0
-            self.low_cmd.motor_cmd[i].kd = 0
-            self.low_cmd.motor_cmd[i].tau = 0
+
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
