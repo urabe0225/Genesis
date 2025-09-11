@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 import time
 import sys
 try:
+    import onnx
     import onnxruntime as ort
+    print("✓ ONNX and ONNX Runtime are available")
     ONNX_AVAILABLE = True
 except ImportError:
+    print("✗ ONNX or ONNX Runtime not available. Please install via 'pip install onnx onnxruntime'")
     ONNX_AVAILABLE = False
-    print("Warning: onnxruntime not available. Install with: pip install onnxruntime")
-
 try:
     from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelPublisher, ChannelFactoryInitialize
     from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
@@ -15,14 +15,23 @@ try:
     from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_, LowCmd_
     from unitree_sdk2py.utils.crc import CRC
     from unitree_sdk2py.utils.thread import RecurrentThread
-    import unitree_legged_const as go2
     from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
     from unitree_sdk2py.go2.sport.sport_client import SportClient
+    print("✓ Unitree SDK is available")
     UNITREE_SDK_AVAILABLE = True
 except ImportError:
+    print("✗ Unitree SDK not available. Please install the Unitree SDK for Python.")
     UNITREE_SDK_AVAILABLE = False
-    print("Warning: Unitree SDK not available")
 
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
+from unitree_sdk2py.utils.crc import CRC
+from unitree_sdk2py.utils.thread import RecurrentThread
+import unitree_legged_const as go2
+from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
+from unitree_sdk2py.go2.sport.sport_client import SportClient
 
 class Custom:
     def __init__(self):
@@ -103,9 +112,9 @@ class Custom:
         self.low_cmd.gpio = 0
         for i in range(20):
             self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
-            self.low_cmd.motor_cmd[i].q= 2.146e9
+            self.low_cmd.motor_cmd[i].q= go2.PosStopF
             self.low_cmd.motor_cmd[i].kp = 0
-            self.low_cmd.motor_cmd[i].dq = 16000.0
+            self.low_cmd.motor_cmd[i].dq = go2.VelStopF
             self.low_cmd.motor_cmd[i].kd = 0
             self.low_cmd.motor_cmd[i].tau = 0
 
