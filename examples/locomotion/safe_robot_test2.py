@@ -29,7 +29,7 @@ from unitree_sdk2py.utils.thread import RecurrentThread
 from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
 from unitree_sdk2py.go2.sport.sport_client import SportClient
 
-class Custom:
+class Go2Controller:
     def __init__(self):
         self.Kp = 60.0
         self.Kd = 5.0
@@ -170,8 +170,7 @@ class Custom:
         self.low_cmd.crc = self.crc.Crc(self.low_cmd)
         self.lowcmd_publisher.Write(self.low_cmd)
 
-if __name__ == '__main__':
-
+def main():
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
     input("Press Enter to continue...")
 
@@ -180,7 +179,7 @@ if __name__ == '__main__':
     else:
         ChannelFactoryInitialize(0)
 
-    custom = Custom()
+    custom = Go2Controller()
     custom.Init()
     custom.Start()
 
@@ -190,3 +189,6 @@ if __name__ == '__main__':
            print("Done!")
            sys.exit(-1)     
         time.sleep(1)
+
+if __name__ == '__main__':
+    main()
