@@ -176,7 +176,6 @@ class Go2Controller:
 def main():
     print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
-    input("Press Enter to continue...")
 
     # Model path (optional)
     model_path = "logs/go2-walking/policy_100.onnx"
@@ -186,11 +185,13 @@ def main():
             ChannelFactoryInitialize(0, sys.argv[1])
         else:
             ChannelFactoryInitialize(0)
-        custom = Go2Controller()
-        custom.Init()
-        custom.Start()
+        go2 = Go2Controller()
+        input("\nPress Enter to start Test 1 (Standing pose)...")
+        #go2.test_1_standing_pose()
+        go2.Init()
+        go2.Start()
         while True:        
-            if custom.percent_4 == 1.0: 
+            if go2.percent_4 == 1.0: 
                 time.sleep(1)
                 print("Done!")
                 sys.exit(-1)     
