@@ -69,21 +69,8 @@ class Go2Controller:
 
     # Public methods
     def Init(self):
-        def init_low_cmd():
-            cmd = unitree_go_msg_dds__LowCmd_()
-            cmd.head[0]=0xFE
-            cmd.head[1]=0xEF
-            cmd.level_flag = 0xFF
-            cmd.gpio = 0
-            for i in range(20):
-                cmd.motor_cmd[i].mode = 0x01  # PMSM mode
-                cmd.motor_cmd[i].q= 2.146e9
-                cmd.motor_cmd[i].kp = 0
-                cmd.motor_cmd[i].dq = 16000.0
-                cmd.motor_cmd[i].kd = 0
-                cmd.motor_cmd[i].tau = 0
-            return cmd
-        self.low_cmd = init_low_cmd()
+        
+        self.InitLowCmd()
 
         # create publisher #
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -115,7 +102,18 @@ class Go2Controller:
         self.lowCmdWriteThreadPtr.Start()
 
     # Private methods
-
+    def InitLowCmd(self):
+        self.low_cmd.head[0]=0xFE
+        self.low_cmd.head[1]=0xEF
+        self.low_cmd.level_flag = 0xFF
+        self.low_cmd.gpio = 0
+        for i in range(20):
+            self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+            self.low_cmd.motor_cmd[i].q= 2.146e9
+            self.low_cmd.motor_cmd[i].kp = 0
+            self.low_cmd.motor_cmd[i].dq = 16000.0
+            self.low_cmd.motor_cmd[i].kd = 0
+            self.low_cmd.motor_cmd[i].tau = 0
 
     def LowStateMessageHandler(self, msg: LowState_):
         self.low_state = msg
@@ -176,6 +174,7 @@ class Go2Controller:
 def main():
     print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
+    input("Press Enter to continue...")
 
     # Model path (optional)
     model_path = "logs/go2-walking/policy_100.onnx"
@@ -185,13 +184,11 @@ def main():
             ChannelFactoryInitialize(0, sys.argv[1])
         else:
             ChannelFactoryInitialize(0)
-        go2 = Go2Controller()
-        input("\nPress Enter to start Test 1 (Standing pose)...")
-        #go2.test_1_standing_pose()
-        go2.Init()
-        go2.Start()
+        custom = Go2Controller()
+        custom.Init()
+        custom.Start()
         while True:        
-            if go2.percent_4 == 1.0: 
+            if custom.percent_4 == 1.0: 
                 time.sleep(1)
                 print("Done!")
                 sys.exit(-1)     
