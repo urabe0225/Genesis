@@ -108,9 +108,9 @@ class Custom:
         self.low_cmd.gpio = 0
         for i in range(20):
             self.low_cmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
-            self.low_cmd.motor_cmd[i].q= go2.PosStopF
+            self.low_cmd.motor_cmd[i].q= 2.146e9
             self.low_cmd.motor_cmd[i].kp = 0
-            self.low_cmd.motor_cmd[i].dq = go2.VelStopF
+            self.low_cmd.motor_cmd[i].dq = 16000.0
             self.low_cmd.motor_cmd[i].kd = 0
             self.low_cmd.motor_cmd[i].tau = 0
 
