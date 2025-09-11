@@ -1,38 +1,22 @@
 import time
 import sys
-import common
-ONNX_AVAILABLE = common.import_onnx()
-UNITREE_SDK_AVAILABLE = common.import_unitree_sdk()
+
+from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
+from unitree_sdk2py.core.channel import ChannelSubscriber
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowState_
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
+from unitree_sdk2py.utils.crc import CRC
+from unitree_sdk2py.utils.thread import RecurrentThread
+from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
+from unitree_sdk2py.go2.sport.sport_client import SportClient
 
 class SafeGo2Controller:
-    def __init__(self, onnx_model_path=None):
-        if UNITREE_SDK_AVAILABLE:
-            self.crc = CRC()
-        else:
-            self.crc = None
-        if onnx_model_path and ONNX_AVAILABLE:
-            try:
-                self.session = ort.InferenceSession(onnx_model_path)
-                print(f"✓ ONNX model loaded: {onnx_model_path}")
-            except Exception as e:
-                print(f"Error loading ONNX model: {e}")
-        elif onnx_model_path:
-            print("✗ ONNX model specified but onnxruntime not available")
-        if UNITREE_SDK_AVAILABLE:
-            try:
-                pass
-            except Exception as e:
-                print(f"✗ Unitree SDK initialization failed: {e}")
-                self.state_sub = None
-                self.cmd_pub = None
-        else:
-            print("✗ Unitree SDK not available")
-            #self.state_sub = None
-            #self.cmd_pub = None
+    def __init__(self):
         self.Kp = 60.0
         self.Kd = 5.0
-
-        self.robot_connected = False
+        self.crc = CRC()
         
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = None  
@@ -50,7 +34,7 @@ class SafeGo2Controller:
         self.lowCmdWriteThreadPtr = None  # thread handling
 
     def Init(self):
-        def init_low_cmd():
+        def init_command():
             cmd = unitree_go_msg_dds__LowCmd_()
             cmd.head[0]=0xFE
             cmd.head[1]=0xEF
@@ -92,7 +76,7 @@ class SafeGo2Controller:
             for i in range(12):
                 self.startPos[i] = self.low_state.motor_state[i].q
 
-        self.low_cmd = init_low_cmd()
+        self.low_cmd = init_command()
 
         # create publisher
         self.lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
@@ -101,16 +85,6 @@ class SafeGo2Controller:
         # create subscriber
         self.lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
         self.lowstate_subscriber.Init(self.LowStateMessageHandler, 10)
-
-        try:
-            test_state = self.lowstate_subscriber.Read()
-            if test_state is not None:
-                self.robot_connected = True
-                print("✓ Robot connection established")
-            else:
-                print("⚠ SDK initialized but no robot response")
-        except:
-            print("⚠ SDK initialized but communication failed")
 
         mode_release()
         get_position()
@@ -187,17 +161,8 @@ class SafeGo2Controller:
         """Test 1: Basic standing pose"""
         print("\nTest 1: Setting to standing pose...")
         self.Init()
-
-        if not self.robot_connected:
-            print("⚠ Skipping Test 1 - No robot connection")
-            print("✓ Test 1 simulated (would set standing pose)")
-            return
-        try:
-            self.Start()
-            self.Wait()
-        except Exception as e:
-            print(f"✗ Test 1 failed: {e}")
-
+        self.Start()
+        self.Wait()
 def main():
     print("=== Go2 Safe Testing Protocol ===")
     print("WARNING: Please ensure there are no obstacles around the robot while running this example.")
