@@ -41,23 +41,18 @@ class Go2Controller:
 
         self.Kp = 60.0
         self.Kd = 5.0
-        self.time_consume = 0
-        self.rate_count = 0
-        self.sin_count = 0
-        self.motiontime = 0
-        self.dt = 0.002  # 0.001~0.01
 
         self.low_cmd = unitree_go_msg_dds__LowCmd_()  
         self.low_state = None  
 
-        self._targetPos_1 = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
+        self.startPos = [0.0] * 12
+        self.standing_pose = [0.0, 1.36, -2.65, 0.0, 1.36, -2.65,
                              -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
-        self._targetPos_2 = [0.0, 0.67, -1.3, 0.0, 0.67, -1.3,
+        self.stand_pose = [0.0, 0.67, -1.3, 0.0, 0.67, -1.3,
                              0.0, 0.67, -1.3, 0.0, 0.67, -1.3]
-        self._targetPos_3 = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
+        self.rest_pose = [-0.35, 1.36, -2.65, 0.35, 1.36, -2.65,
                              -0.5, 1.36, -2.65, 0.5, 1.36, -2.65]
 
-        self.startPos = [0.0] * 12
         self.duration_1 = 500
         self.duration_2 = 500
         self.duration_3 = 1000
@@ -68,7 +63,6 @@ class Go2Controller:
         self.percent_4 = 0
 
         self.firstRun = True
-        self.done = False
 
         # thread handling
         self.lowCmdWriteThreadPtr = None
@@ -137,7 +131,7 @@ class Go2Controller:
         self.percent_1 = min(self.percent_1, 1)
         if self.percent_1 < 1:
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percent_1) * self.startPos[i] + self.percent_1 * self._targetPos_1[i]
+                self.low_cmd.motor_cmd[i].q = (1 - self.percent_1) * self.startPos[i] + self.percent_1 * self.standing_pose[i]
                 self.low_cmd.motor_cmd[i].dq = 0
                 self.low_cmd.motor_cmd[i].kp = self.Kp
                 self.low_cmd.motor_cmd[i].kd = self.Kd
@@ -147,7 +141,7 @@ class Go2Controller:
             self.percent_2 += 1.0 / self.duration_2
             self.percent_2 = min(self.percent_2, 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percent_2) * self._targetPos_1[i] + self.percent_2 * self._targetPos_2[i]
+                self.low_cmd.motor_cmd[i].q = (1 - self.percent_2) * self.standing_pose[i] + self.percent_2 * self.stand_pose[i]
                 self.low_cmd.motor_cmd[i].dq = 0
                 self.low_cmd.motor_cmd[i].kp = self.Kp
                 self.low_cmd.motor_cmd[i].kd = self.Kd
@@ -157,7 +151,7 @@ class Go2Controller:
             self.percent_3 += 1.0 / self.duration_3
             self.percent_3 = min(self.percent_3, 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = self._targetPos_2[i] 
+                self.low_cmd.motor_cmd[i].q = self.stand_pose[i] 
                 self.low_cmd.motor_cmd[i].dq = 0
                 self.low_cmd.motor_cmd[i].kp = self.Kp
                 self.low_cmd.motor_cmd[i].kd = self.Kd
@@ -167,7 +161,7 @@ class Go2Controller:
             self.percent_4 += 1.0 / self.duration_4
             self.percent_4 = min(self.percent_4, 1)
             for i in range(12):
-                self.low_cmd.motor_cmd[i].q = (1 - self.percent_4) * self._targetPos_2[i] + self.percent_4 * self._targetPos_3[i]
+                self.low_cmd.motor_cmd[i].q = (1 - self.percent_4) * self.stand_pose[i] + self.percent_4 * self.rest_pose[i]
                 self.low_cmd.motor_cmd[i].dq = 0
                 self.low_cmd.motor_cmd[i].kp = self.Kp
                 self.low_cmd.motor_cmd[i].kd = self.Kd
